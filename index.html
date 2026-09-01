@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#2495df" />
+<title>Merge Army</title>
+<style>
+:root{--ink:#fff;--gold:#ffd65a;--blue:#21a8f4;--red:#ff5362;--green:#4ed26e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#15344c;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button{font:inherit;border:0;background:none;padding:0}
+#game{position:relative;width:min(100vw,560px);height:100dvh;min-height:100%;margin:0 auto;overflow:hidden;background-image:url('assets/backgrounds/arena.png');background-size:100% 100%;background-position:center;background-repeat:no-repeat;touch-action:none}
+.hud{position:absolute;left:0;right:0;top:1.5%;height:7%;z-index:20;pointer-events:none;text-shadow:0 2px 4px #001c42,0 0 8px #001c42}
+.hudItem{position:absolute;color:white;font-weight:1000;line-height:1;text-align:center}
+.hudItem span{display:block;font-size:clamp(15px,4vw,22px)}
+.hudItem small{display:block;margin-top:4px;font-size:clamp(8px,2.3vw,11px);letter-spacing:.5px;color:#eaf8ff;text-transform:uppercase}
+#coinsHud{left:10%;width:26%;top:18%}
+#stageHud{left:39%;width:22%;top:15%}
+#powerHud{right:8%;width:27%;top:18%}
+#enemyFormation{position:absolute;left:8%;right:8%;top:13.2%;height:16.2%;z-index:12;display:flex;align-items:flex-end;justify-content:center;gap:1.1%;pointer-events:none}
+.enemyPreview{position:relative;width:min(15.5%,78px);height:100%;display:flex;align-items:flex-end;justify-content:center}
+.enemyPreview img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 5px 3px rgba(50,0,0,.28))}
+.levelBadge{position:absolute;right:-3%;top:6%;min-width:25px;height:25px;padding:0 6px;border-radius:999px;background:linear-gradient(#fff,#e9f2fa);border:2px solid #e1a625;color:#344866;font-size:10px;font-weight:1000;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 7px #0004}
+#enemyPower{position:absolute;left:50%;top:30.1%;transform:translateX(-50%);z-index:13;color:white;font-size:11px;font-weight:1000;background:#441a1dcc;border:1px solid #ff7983;border-radius:999px;padding:5px 10px;box-shadow:0 4px 10px #0004}
+#grid{position:absolute;left:13.2%;top:55.1%;width:73.6%;height:25.4%;z-index:15;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:1.5% 1.2%;padding:1.5% 1%;}
+.slot{position:relative;display:flex;align-items:center;justify-content:center;border-radius:14px;transition:.12s;touch-action:none}
+.slot.highlight{background:rgba(255,231,79,.28);box-shadow:0 0 0 3px #ffe84f,0 0 18px #fff173}
+.unit{position:relative;width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;touch-action:none;cursor:grab}
+.unit img{width:112%;height:112%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 3px rgba(0,0,0,.28));pointer-events:none}
+.unit.dragging{opacity:.28;transform:scale(.86)}
+.unit.pop{animation:pop .3s ease}
+@keyframes pop{0%{transform:scale(.55)}65%{transform:scale(1.2)}100%{transform:scale(1)}}
+.unit .levelBadge{right:-1%;top:0;transform:scale(.82);transform-origin:top right}
+#shop{position:absolute;left:2.8%;right:2.8%;bottom:.5%;height:10.3%;z-index:16;display:grid;grid-template-columns:repeat(3,1fr);gap:2.4%;padding:0 1%;}
+.shopItem{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation}
+.shopItem img{width:68%;height:83%;object-fit:contain;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4));transition:transform .12s}
+.shopItem:active img{transform:scale(.9)}
+.shopPrice{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);white-space:nowrap;color:#fff7cf;font-size:clamp(9px,2.7vw,13px);font-weight:1000;text-shadow:0 2px 3px #000,0 0 6px #000}
+.shopName{position:absolute;top:0;left:50%;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:clamp(8px,2.2vw,11px);font-weight:1000;text-shadow:0 2px 3px #000}
+#battleBtn{position:absolute;left:29.5%;top:80.7%;width:41%;height:8.8%;z-index:17;cursor:pointer;touch-action:manipulation}
+#battleBtn img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 5px 4px rgba(0,0,0,.32));transition:transform .1s}
+#battleBtn:active img{transform:translateY(4px) scale(.98)}
+#rerollBtn{position:absolute;left:6.3%;top:81.5%;width:20.5%;height:7.1%;z-index:18;border-radius:18px;background:linear-gradient(#31bdfb,#0871d4);border:3px solid #e8bd42;box-shadow:0 5px 0 #104875,0 7px 12px #0004;color:white;font-weight:1000;font-size:clamp(9px,2.5vw,13px);text-shadow:0 2px 2px #04519d;cursor:pointer}
+#rerollBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #104875}
+#rerollBtn small{display:block;font-size:.72em;color:#fff2aa}
+#infoBtn{position:absolute;right:6.3%;top:81.5%;width:20.5%;height:7.1%;z-index:18;border-radius:18px;background:linear-gradient(#31bdfb,#0871d4);border:3px solid #e8bd42;box-shadow:0 5px 0 #104875,0 7px 12px #0004;color:white;font-weight:1000;font-size:clamp(9px,2.5vw,13px);text-shadow:0 2px 2px #04519d;cursor:pointer}
+#battleCanvas{position:absolute;left:0;right:0;top:8.8%;width:100%;height:71.5%;z-index:30;display:none;pointer-events:none}
+#battleCanvas.show{display:block}
+#battleTop{position:absolute;top:9.2%;left:50%;transform:translateX(-50%);z-index:34;display:none;background:#142f4ccc;border:2px solid #e8bf47;border-radius:999px;color:white;padding:6px 12px;font-size:11px;font-weight:1000;box-shadow:0 4px 10px #0005}
+#battleTop.show{display:block}
+.hiddenDuringBattle.hide{visibility:hidden}
+#toast{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%) scale(.94);z-index:80;background:#172c46e8;border:2px solid #ffd85a;color:white;border-radius:16px;padding:10px 15px;font-weight:1000;font-size:13px;text-align:center;opacity:0;pointer-events:none;transition:.18s;box-shadow:0 10px 30px #0006}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#result{position:absolute;inset:0;z-index:100;background:#0b2136c9;display:none;align-items:center;justify-content:center;padding:20px}
+#result.show{display:flex}
+.resultCard{width:min(90%,390px);background:linear-gradient(#fff8df,#ead3a0);border:4px solid #a87525;border-radius:28px;padding:20px 18px 18px;text-align:center;box-shadow:0 20px 50px #0008}
+#resultBadge{width:80%;height:145px;object-fit:contain;margin:-10px auto 4px;display:block}
+#resultText{color:#5c421f;font-size:14px;line-height:1.35;font-weight:800;margin:3px 0 14px}
+#continueBtn{width:78%;max-width:280px;border-radius:18px;padding:13px 12px;color:white;background:linear-gradient(#61df82,#2cbd5b);border:3px solid #f4c64c;box-shadow:0 5px 0 #18813b;font-weight:1000;font-size:17px;cursor:pointer}
+#continueBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #18813b}
+#help{position:absolute;inset:0;z-index:110;background:#0b2136d9;display:none;align-items:center;justify-content:center;padding:20px}
+#help.show{display:flex}
+.helpCard{width:min(90%,390px);background:#fff6d7;border:4px solid #ae7d2b;border-radius:26px;padding:20px;color:#4f3b23;box-shadow:0 20px 50px #0008}
+.helpCard h2{margin:0 0 10px;text-align:center}
+.helpCard p{font-size:13px;line-height:1.45;font-weight:700;margin:7px 0}
+.helpCard button{display:block;margin:15px auto 0;background:#1f9bea;color:white;border-radius:15px;padding:11px 25px;font-weight:1000;border:3px solid #e1b63b}
+@media (min-width:561px){#game{box-shadow:0 0 40px #0007}}
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="hud">
+    <div class="hudItem" id="coinsHud"><span>🪙 500</span><small>Coins</small></div>
+    <div class="hudItem" id="stageHud"><span>STAGE 1</span><small>Battle</small></div>
+    <div class="hudItem" id="powerHud"><span>⚔ 0</span><small>Power</small></div>
+  </div>
+
+  <div id="enemyFormation" class="hiddenDuringBattle"></div>
+  <div id="enemyPower" class="hiddenDuringBattle">Enemy 0</div>
+  <div id="grid" class="hiddenDuringBattle"></div>
+
+  <button id="rerollBtn" class="hiddenDuringBattle">REROLL<small id="rerollCost">40 🪙</small></button>
+  <button id="battleBtn" class="hiddenDuringBattle" aria-label="Battle"><img src="assets/ui/battle.png" alt="Battle"></button>
+  <button id="infoBtn" class="hiddenDuringBattle">HOW TO<small>PLAY</small></button>
+  <div id="shop" class="hiddenDuringBattle"></div>
+
+  <canvas id="battleCanvas"></canvas>
+  <div id="battleTop">Battle...</div>
+  <div id="toast"></div>
+
+  <div id="result">
+    <div class="resultCard">
+      <img id="resultBadge" src="assets/ui/victory.png" alt="Result">
+      <div id="resultText"></div>
+      <button id="continueBtn">CONTINUE</button>
+    </div>
+  </div>
+
+  <div id="help">
+    <div class="helpCard">
+      <h2>Merge Army</h2>
+      <p>Buy units from the three slots at the bottom.</p>
+      <p>Drag two identical units of the same level onto each other to merge them into the next level.</p>
+      <p>Warriors and Tanks fight up close. Archers and Mages attack from range.</p>
+      <p>Win battles, earn coins, merge stronger troops and climb through the stages.</p>
+      <button id="closeHelp">GOT IT</button>
+    </div>
+  </div>
+</div>
+<script>
+(()=>{
+'use strict';
+const SAVE='merge_army_assets_v1';
+const GRID=16, MAX_LEVEL=4;
+const PLAYER={
+ warrior:{name:'Warrior',baseCost:90,hp:62,dmg:14,range:30,speed:76,cooldown:.82},
+ archer:{name:'Archer',baseCost:105,hp:40,dmg:12,range:145,speed:69,cooldown:1.0,projectile:true},
+ mage:{name:'Mage',baseCost:125,hp:34,dmg:17,range:138,speed:65,cooldown:1.16,projectile:true,splash:38},
+ tank:{name:'Tank',baseCost:115,hp:88,dmg:10,range:28,speed:57,cooldown:.92}
+};
+const ENEMY={
+ goblin:{name:'Goblin',role:'warrior',hp:56,dmg:13,range:30,speed:80,cooldown:.80},
+ orc:{name:'Orc',role:'tank',hp:92,dmg:11,range:29,speed:53,cooldown:.95},
+ skeleton:{name:'Skeleton',role:'archer',hp:39,dmg:12,range:145,speed:66,cooldown:1.0,projectile:true},
+ shaman:{name:'Shaman',role:'mage',hp:36,dmg:16,range:138,speed:62,cooldown:1.18,projectile:true,splash:34}
+};
+const PKEY=Object.keys(PLAYER), EKEY=Object.keys(ENEMY);
+const $=s=>document.querySelector(s);
+const game=$('#game'),gridEl=$('#grid'),shopEl=$('#shop'),enemyFormation=$('#enemyFormation'),enemyPowerEl=$('#enemyPower');
+const coinsHud=$('#coinsHud'),stageHud=$('#stageHud'),powerHud=$('#powerHud'),rerollCostEl=$('#rerollCost');
+const battleBtn=$('#battleBtn'),rerollBtn=$('#rerollBtn'),infoBtn=$('#infoBtn'),help=$('#help'),closeHelp=$('#closeHelp');
+const canvas=$('#battleCanvas'),battleTop=$('#battleTop'),toast=$('#toast'),result=$('#result'),resultBadge=$('#resultBadge'),resultText=$('#resultText'),continueBtn=$('#continueBtn');
+
+function fresh(){return {coins:500,stage:1,best:1,units:Array(GRID).fill(null),shop:[],wins:0}}
+let state=load()||fresh();
+if(!state.units.some(Boolean)){state.units[8]={type:'warrior',level:1};state.units[9]={type:'warrior',level:1};state.units[13]={type:'archer',level:1}}
+if(!Array.isArray(state.shop)||state.shop.length!==3) state.shop=rollShop();
+let enemySquad=[];let dragging=null;let fighting=false;let battle=null;let raf=0;const spriteCache={};
+
+function load(){try{return JSON.parse(localStorage.getItem(SAVE)||'null')}catch(e){return null}}
+function save(){localStorage.setItem(SAVE,JSON.stringify(state))}
+function scale(level){return Math.pow(1.62,level-1)}
+function pAsset(type,level){return `assets/units/player/${type}_${Math.min(level,MAX_LEVEL)}.png`}
+function eAsset(type,level){return `assets/units/enemy/${type}_${Math.min(level,MAX_LEVEL)}.png`}
+function getImg(src){if(!spriteCache[src]){const im=new Image();im.src=src;spriteCache[src]=im}return spriteCache[src]}
+function playerPower(u){if(!u)return 0;const s=PLAYER[u.type];return Math.round((s.hp*.55+s.dmg*4.2)*scale(u.level))}
+function enemyUnitPower(u){const s=ENEMY[u.type];return Math.round((s.hp*.55+s.dmg*4.2)*scale(u.level)*(1+state.stage*.035))}
+function armyPower(arr){return arr.reduce((a,u)=>a+(u?(PLAYER[u.type]?playerPower(u):enemyUnitPower(u)):0),0)}
+function shopCost(type){return Math.round(PLAYER[type].baseCost+(state.stage-1)*11)}
+function rerollPrice(){return 35+Math.floor((state.stage-1)*5)}
+function weightedPlayer(){const r=Math.random();return r<.38?'warrior':r<.67?'archer':r<.86?'tank':'mage'}
+function rollShop(){return [0,1,2].map(()=>({type:weightedPlayer(),level:1}))}
+function enemyLevel(){if(state.stage<3)return 1;if(state.stage<6)return Math.random()<.72?1:2;if(state.stage<10)return Math.random()<.58?2:3;return Math.min(4,2+Math.floor(state.stage/5)+(Math.random()<.25?1:0))}
+function buildEnemy(){const count=Math.min(6,2+Math.floor((state.stage+1)/2));return Array.from({length:count},(_,i)=>({type:EKEY[(state.stage+i)%EKEY.length],level:enemyLevel()}))}
+
+function showToast(t){toast.textContent=t;toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('show'),900)}
+function renderHUD(){coinsHud.innerHTML=`<span>🪙 ${state.coins.toLocaleString()}</span><small>Coins</small>`;stageHud.innerHTML=`<span>STAGE ${state.stage}</span><small>Battle</small>`;powerHud.innerHTML=`<span>⚔ ${armyPower(state.units).toLocaleString()}</span><small>Power</small>`;rerollCostEl.textContent=`${rerollPrice()} 🪙`}
+function renderEnemy(){enemySquad=buildEnemy();enemyFormation.innerHTML='';enemySquad.forEach(u=>{const d=document.createElement('div');d.className='enemyPreview';d.innerHTML=`<img src="${eAsset(u.type,u.level)}" alt=""><div class="levelBadge">Lv${u.level}</div>`;enemyFormation.appendChild(d)});enemyPowerEl.textContent='Enemy '+armyPower(enemySquad).toLocaleString()}
+function renderGrid(){gridEl.innerHTML='';state.units.forEach((u,i)=>{const slot=document.createElement('div');slot.className='slot';slot.dataset.index=i;slot.addEventListener('pointerenter',()=>{if(dragging!==null)slot.classList.add('highlight')});slot.addEventListener('pointerleave',()=>slot.classList.remove('highlight'));slot.addEventListener('pointerup',()=>drop(i));if(u){const unit=document.createElement('div');unit.className='unit';unit.dataset.index=i;unit.innerHTML=`<img src="${pAsset(u.type,u.level)}" alt="${PLAYER[u.type].name}"><div class="levelBadge">Lv${u.level}</div>`;unit.addEventListener('pointerdown',e=>dragStart(e,i,unit));slot.appendChild(unit)}gridEl.appendChild(slot)})}
+function renderShop(){shopEl.innerHTML='';state.shop.forEach((u,i)=>{const d=document.createElement('button');d.className='shopItem';d.innerHTML=`<div class="shopName">${PLAYER[u.type].name}</div><img src="${pAsset(u.type,u.level)}" alt=""><div class="shopPrice">${shopCost(u.type)} 🪙</div>`;d.addEventListener('click',()=>buy(i));shopEl.appendChild(d)})}
+function renderAll(){renderHUD();renderGrid();renderShop();save()}
+
+function dragStart(e,index,el){if(fighting)return;dragging=index;el.classList.add('dragging');el.setPointerCapture?.(e.pointerId);const move=ev=>{document.querySelectorAll('.slot.highlight').forEach(s=>s.classList.remove('highlight'));const hit=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('.slot');hit?.classList.add('highlight')};const up=ev=>{el.removeEventListener('pointermove',move);el.removeEventListener('pointerup',up);const hit=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('.slot');if(hit)drop(Number(hit.dataset.index));else cancelDrag()};el.addEventListener('pointermove',move);el.addEventListener('pointerup',up)}
+function cancelDrag(){dragging=null;document.querySelectorAll('.dragging').forEach(x=>x.classList.remove('dragging'));document.querySelectorAll('.slot.highlight').forEach(x=>x.classList.remove('highlight'))}
+function drop(to){if(dragging===null)return;const from=dragging;if(from===to){cancelDrag();return}const a=state.units[from],b=state.units[to];if(!b){state.units[to]=a;state.units[from]=null;cancelDrag();renderAll();return}if(a&&b&&a.type===b.type&&a.level===b.level&&a.level<MAX_LEVEL){state.units[to]={type:a.type,level:a.level+1};state.units[from]=null;cancelDrag();renderAll();gridEl.querySelector(`[data-index="${to}"] .unit`)?.classList.add('pop');showToast(`${PLAYER[a.type].name} Lv${a.level+1}!`);return}state.units[from]=b;state.units[to]=a;cancelDrag();renderAll()}
+function buy(i){if(fighting)return;const u=state.shop[i];const cost=shopCost(u.type);const empty=state.units.map((x,i)=>x?null:i).filter(x=>x!==null);if(!empty.length){showToast('Army grid is full');return}if(state.coins<cost){showToast('Not enough coins');return}state.coins-=cost;const target=empty[Math.floor(Math.random()*empty.length)];state.units[target]={...u};state.shop[i]={type:weightedPlayer(),level:1};renderAll();gridEl.querySelector(`[data-index="${target}"] .unit`)?.classList.add('pop')}
+rerollBtn.onclick=()=>{if(fighting)return;const c=rerollPrice();if(state.coins<c){showToast('Not enough coins');return}state.coins-=c;state.shop=rollShop();renderAll()};
+infoBtn.onclick=()=>help.classList.add('show');closeHelp.onclick=()=>help.classList.remove('show');
+
+function setBattleVisibility(on){document.querySelectorAll('.hiddenDuringBattle').forEach(x=>x.classList.toggle('hide',on));canvas.classList.toggle('show',on);battleTop.classList.toggle('show',on)}
+function statFor(side,u){if(side==='player'){const s=PLAYER[u.type],m=scale(u.level);return {hp:Math.round(s.hp*m),dmg:Math.round(s.dmg*m),range:s.range,speed:s.speed,cooldown:s.cooldown,projectile:!!s.projectile,splash:s.splash||0}}const s=ENEMY[u.type],m=scale(u.level)*(1+state.stage*.035);return {hp:Math.round(s.hp*m),dmg:Math.round(s.dmg*m),range:s.range,speed:s.speed,cooldown:s.cooldown,projectile:!!s.projectile,splash:s.splash||0}}
+function createFighter(side,u,x,y){const s=statFor(side,u);return {id:Math.random().toString(36).slice(2),side,type:u.type,level:u.level,x,y,hp:s.hp,maxHp:s.hp,dmg:s.dmg,range:s.range,speed:s.speed,cooldown:Math.random()*.45,rate:s.cooldown,projectile:s.projectile,splash:s.splash,dead:false,flash:0,img:getImg(side==='player'?pAsset(u.type,u.level):eAsset(u.type,u.level))}}
+function layout(units,side,w,h){const n=units.length;const cols=Math.min(3,n);return units.map((u,i)=>{const row=Math.floor(i/cols),col=i%cols;const rowCount=Math.min(cols,n-row*cols);const spread=Math.min(w*.55,rowCount*76);const start=w/2-spread/2+spread/(rowCount*2);const x=start+col*(spread/rowCount);const y=side==='enemy'?h*.20+row*74:h*.78-row*74;return createFighter(side,u,x,y)})}
+function resizeCanvas(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(r.width*d);canvas.height=Math.round(r.height*d);if(battle)battle.ctx.setTransform(d,0,0,d,0,0)}
+window.addEventListener('resize',()=>{if(fighting)resizeCanvas()});
+function startBattle(){if(fighting)return;const players=state.units.filter(Boolean);if(!players.length){showToast('Recruit at least one unit');return}fighting=true;setBattleVisibility(true);battleTop.textContent=`Stage ${state.stage} · ${armyPower(players).toLocaleString()} vs ${armyPower(enemySquad).toLocaleString()}`;battle={ctx:canvas.getContext('2d'),fighters:[],shots:[],last:performance.now(),ended:false};resizeCanvas();const r=canvas.getBoundingClientRect();battle.fighters=[...layout(enemySquad,'enemy',r.width,r.height),...layout(players,'player',r.width,r.height)];cancelAnimationFrame(raf);raf=requestAnimationFrame(loop)}
+battleBtn.onclick=startBattle;
+function alive(side){return battle.fighters.filter(f=>f.side===side&&!f.dead)}
+function targetFor(f){const arr=alive(f.side==='player'?'enemy':'player');if(!arr.length)return null;return arr.reduce((best,x)=>!best||((x.x-f.x)**2+(x.y-f.y)**2)<((best.x-f.x)**2+(best.y-f.y)**2)?x:best,null)}
+function hit(t,dmg,color){t.hp-=dmg;t.flash=.09;if(t.hp<=0){t.hp=0;t.dead=true}}
+function attack(a,t){if(a.projectile){battle.shots.push({x:a.x,y:a.y,target:t,dmg:a.dmg,splash:a.splash,speed:a.type==='archer'||a.type==='skeleton'?360:300,color:a.side==='player'?'#fff56a':'#ff7c8b'})}else hit(t,a.dmg)}
+function update(dt){for(const f of battle.fighters){if(f.dead)continue;f.cooldown-=dt;f.flash=Math.max(0,f.flash-dt);const t=targetFor(f);if(!t)continue;const dx=t.x-f.x,dy=t.y-f.y,d=Math.hypot(dx,dy)||1;const desired=f.range+30;if(d>desired){f.x+=dx/d*f.speed*dt;f.y+=dy/d*f.speed*dt}else if(f.cooldown<=0){attack(f,t);f.cooldown=f.rate}}
+for(let i=battle.shots.length-1;i>=0;i--){const p=battle.shots[i];if(!p.target||p.target.dead){battle.shots.splice(i,1);continue}const dx=p.target.x-p.x,dy=p.target.y-p.y,d=Math.hypot(dx,dy)||1;if(d<p.speed*dt+22){hit(p.target,p.dmg);if(p.splash){alive(p.target.side).forEach(v=>{if(v.id!==p.target.id&&Math.hypot(v.x-p.target.x,v.y-p.target.y)<p.splash)hit(v,Math.round(p.dmg*.5))})}battle.shots.splice(i,1)}else{p.x+=dx/d*p.speed*dt;p.y+=dy/d*p.speed*dt}}
+if(!alive('player').length||!alive('enemy').length){battle.ended=true;setTimeout(()=>finish(alive('enemy').length===0),420)}}
+function draw(){const ctx=battle.ctx,r=canvas.getBoundingClientRect();ctx.clearRect(0,0,r.width,r.height);for(const f of [...battle.fighters].sort((a,b)=>a.y-b.y)){if(f.dead)continue;const size=68+f.level*8+(f.type==='tank'||f.type==='orc'?8:0);ctx.save();if(f.flash)ctx.globalAlpha=.5;ctx.drawImage(f.img,f.x-size/2,f.y-size*.72,size,size);ctx.globalAlpha=1;ctx.fillStyle='#14263a99';ctx.fillRect(f.x-size*.34,f.y+size*.25,size*.68,5);ctx.fillStyle=f.side==='player'?'#45d36d':'#ff5968';ctx.fillRect(f.x-size*.34,f.y+size*.25,size*.68*(f.hp/f.maxHp),5);ctx.fillStyle='white';ctx.font='700 10px system-ui';ctx.textAlign='center';ctx.fillText('Lv'+f.level,f.x,f.y-size*.55);ctx.restore()}for(const p of battle.shots){ctx.beginPath();ctx.fillStyle=p.color;ctx.arc(p.x,p.y,5,0,Math.PI*2);ctx.fill()}}
+function loop(now){if(!battle)return;const dt=Math.min(.033,(now-battle.last)/1000||.016);battle.last=now;update(dt);draw();if(!battle.ended)raf=requestAnimationFrame(loop)}
+function finish(win){fighting=false;cancelAnimationFrame(raf);setBattleVisibility(false);battle=null;let reward;if(win){reward=120+state.stage*42;state.coins+=reward;state.stage++;state.best=Math.max(state.best,state.stage);state.wins++;resultBadge.src='assets/ui/victory.png';resultText.textContent=`Victory! +${reward} coins. Stage ${state.stage} unlocked.`}else{reward=55+state.stage*10;state.coins+=reward;resultBadge.src='assets/ui/defeat.png';resultText.textContent=`Defeat. +${reward} coins. Merge stronger units and try again.`}state.shop=rollShop();save();renderAll();result.classList.add('show')}
+continueBtn.onclick=()=>{result.classList.remove('show');renderEnemy();renderAll()};
+
+renderEnemy();renderAll();
+})();
+</script>
+</body>
+</html>
